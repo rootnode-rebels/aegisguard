@@ -1,0 +1,157 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AWS Serverless Real-Time Account Hijacking Detection and Prevention System
+  Incorporates AWS Lambda, Amazon API Gateway, Amazon DynamoDB, CloudWatch Metrics, Alarms, and SNS.
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 512
+    Runtime: python3.11
+    Environment:
+      Variables:
+        STAGE: prod
+        MONGODB_URI: !Ref MongoDBUriParameter
+        SECURITY_ALERT_TOPIC_ARN: !Ref SecurityAlertTopic
+
+Parameters:
+  MongoDBUriParameter:
+    Type: String
+    Default: "mongodb+srv://user:pass@cluster.mongodb.net/account_security_db"
+    Description: Connection string for MongoDB Atlas or AWS DocumentDB cluster.
+  AdminNotificationEmail:
+    Type: String
+    Default: "security-alerts@example.com"
+    Description: Email address subscribed to real-time security alarms.
+
+Resources:
+  # -------------------------------------------------------------
+  # Amazon API Gateway
+  # -------------------------------------------------------------
+  AccountSecurityApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization,X-Client-Fingerprint,X-Request-Id'"
+        AllowOrigin: "'*'"
+
+  # -------------------------------------------------------------
+  # AWS Lambda Functions
+  # -------------------------------------------------------------
+  AuthHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/
+      Handler: auth_handler.lambda_handler
+      Description: Handles user registration, PBKDF2 authentication, and session issuance.
+      Events:
+        LoginApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AccountSecurityApi
+            Path: /auth/login
+            Method: post
+        RegisterApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AccountSecurityApi
+            Path: /auth/register
+            Method: post
+        SessionsApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AccountSecurityApi
+            Path: /auth/sessions
+            Method: get
+
+  RiskEngineFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/
+      Handler: risk_engine.lambda_handler
+      MemorySize: 1024
+      Description: Executes Scikit-learn Isolation Forest and Random Forest behavioral anomaly detection.
+      Events:
+        EvaluateRiskApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AccountSecurityApi
+            Path: /security/evaluate-risk
+            Method: post
+
+  AlertDispatcherFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/
+      Handler: alert_dispatcher.lambda_handler
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SecurityAlertTopic.TopicName
+      Events:
+        DispatchAlertApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AccountSecurityApi
+            Path: /security/alerts
+            Method: post
+
+  # -------------------------------------------------------------
+  # Amazon CloudWatch Log Groups & Alarms
+  # -------------------------------------------------------------
+  RiskEngineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/AccountHijackRiskEngine
+      RetentionInDays: 30
+
+  HighRiskDetectionMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref RiskEngineLogGroup
+      FilterPattern: '{ $.action = "BLOCK_SESSION" }'
+      MetricTransformations:
+        - MetricNamespace: AWS/AccountSecurity
+          MetricName: HighRiskDetections
+          MetricValue: "1"
+
+  HighRiskRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: HighRiskHijackDetectionAlarm
+      AlarmDescription: Triggers when 3 or more high-risk hijacking attempts are detected within 5 minutes.
+      Namespace: AWS/AccountSecurity
+      MetricName: HighRiskDetections
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 3
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SecurityAlertTopic
+
+  # -------------------------------------------------------------
+  # Amazon SNS Topic for Immediate Security Alerts
+  # -------------------------------------------------------------
+  SecurityAlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: AccountHijackSecurityAlerts
+      DisplayName: Real-Time Account Hijacking Security Notifications
+
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref SecurityAlertTopic
+      Protocol: email
+      Endpoint: !Ref AdminNotificationEmail
+
+Outputs:
+  ApiUrl:
+    Description: Production API Gateway invoke URL
+    Value: !Sub "https://${AccountSecurityApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+  SecurityTopicArn:
+    Description: SNS Topic ARN for security alerts
+    Value: !Ref SecurityAlertTopic

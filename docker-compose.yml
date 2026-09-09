@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # AWSSecurity AI Application (Standalone Mode - Zero AWS required)
+  awssecurity-app:
+    build: .
+    container_name: awssecurity_ai_system
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DEPLOYMENT_MODE=STANDALONE_LOCAL
+      - MONGODB_URI=mongodb://mongo:27017/account_security_db
+    depends_on:
+      - mongo
+    volumes:
+      - ./data:/app/data
+
+  # Self-Hosted MongoDB (Local Database - Zero AWS DocumentDB required)
+  mongo:
+    image: mongo:7.0
+    container_name: awssecurity_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

@@ -1,0 +1,39 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "AWS/AccountSecurity", "Invocations", { "stat": "Sum", "color": "#2ca02c" } ],
+          [ ".", "HighRiskDetections", { "stat": "Sum", "color": "#d62728" } ],
+          [ ".", "BlockedHijacks", { "stat": "Sum", "color": "#ff7f0e" } ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-1",
+        "title": "Account Security Serverless Activity",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "AWS/AccountSecurity", "AvgRiskScore", { "stat": "Average", "color": "#9467bd" } ]
+        ],
+        "view": "timeSeries",
+        "region": "us-east-1",
+        "title": "Average Real-Time Risk Score",
+        "period": 300
+      }
+    }
+  ]
+}
