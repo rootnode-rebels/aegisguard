@@ -1200,6 +1200,43 @@ def toggle_maintenance(enable: bool):
 
 
 # -------------------------------------------------------------
+# CMS / Admin Endpoints
+# -------------------------------------------------------------
+@app.get("/api/cms/users")
+def cms_get_users():
+    users = db.users.find()
+    safe_users = []
+    for u in users:
+        u.pop("password_hash", None)
+        u.pop("mfa_secret", None)
+        safe_users.append(u)
+    return safe_users
+
+@app.delete("/api/cms/users/{email}")
+def cms_delete_user(email: str):
+    success = db.users.delete_one({"email": email})
+    db.active_sessions.delete_many({"email": email})
+    if success:
+        return {"message": f"User {email} deleted successfully"}
+    raise HTTPException(status_code=404, detail="User not found")
+
+@app.get("/api/cms/stats")
+def cms_get_stats():
+    total_users = db.users.count_documents()
+    active_sessions = db.active_sessions.count_documents()
+    total_events = db.security_events.count_documents()
+    blocked_hijacks = db.security_events.count_documents({"action_taken": "BLOCK_SESSION"})
+    
+    return {
+        "total_users": total_users,
+        "active_sessions": active_sessions,
+        "total_security_events": total_events,
+        "blocked_hijacks": blocked_hijacks,
+        "maintenance_mode": MAINTENANCE_MODE
+    }
+
+
+# -------------------------------------------------------------
 # Static Files & Single Page Application Routing
 # -------------------------------------------------------------
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
