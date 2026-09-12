@@ -1,124 +1,173 @@
-# Real-Time Account Hijacking Detection and Prevention System (AWSSecurity AI)
+# 🛡️ Real-Time Account Hijacking Detection and Prevention System (AWSSecurity AI)
 
-A cloud-native, Machine Learning-powered cybersecurity web application built on AWS Serverless architecture to detect, analyze, alert, and automatically block unauthorized access and account hijacking attempts in real time.
+
+A cloud-native cybersecurity platform built on AWS Serverless architecture that leverages hybrid Machine Learning to detect, analyze, alert, and automatically block account takeover and session hijacking attempts in real time.
 
 ---
 
-## 1. System Architecture
+## 🏗️ System Architecture
 
+The platform enforces **Continuous Behavioral Authentication**. Rather than trusting static passwords alone, incoming telemetry is evaluated by an ML inference pipeline to automatically neutralize compromised sessions.
+
+```mermaid
+flowchart TD
+    subgraph CLIENT["Dual-Persona Client Suite"]
+        U1["🛡️ User Security Portal (Live Siren & Kill Switch)"]
+        U2["⚡ Red Team Attack Studio (Tokyo Travel, Tor, Brute Force)"]
+        U3["🛰️ Blue Team SOC Visualizer (SVG Gauge & Flight Map)"]
+    end
+
+    subgraph GATEWAY["Amazon API Gateway & Ingestion"]
+        GW["REST API Gateway (CORS Enabled)"]
+        V["Pydantic Validation • XSS/NoSQL Sanitizer • Sliding-Window Rate Limiter"]
+    end
+
+    subgraph COMPUTE["AWS Lambda Serverless Microservices"]
+        L1["Auth & Session Handler<br/>(PBKDF2-SHA256, Kill Switch)"]
+        L2["ML Risk Engine<br/>(Hybrid Anomaly Pipeline)"]
+        L3["Alert Dispatcher<br/>(Web Audio Siren & SNS)"]
+    end
+
+    subgraph ML["Hybrid Machine Learning Models"]
+        M1["Scikit-Learn Random Forest (Supervised Risk)"]
+        M2["Scikit-Learn Isolation Forest (Zero-Day Outlier)"]
+        M3["TensorFlow Deep Autoencoder (Reconstruction MSE Loss)"]
+    end
+
+    subgraph STORAGE["Telemetry & Storage Layer"]
+        CW["Amazon CloudWatch (Metrics, Alarms, Logs)"]
+        SNS["Amazon SNS (Alert Topics)"]
+        DB["MongoDB / Local Document Store"]
+    end
+
+    CLIENT -->|HTTPS / REST| GW --> V --> COMPUTE
+    L2 --> ML
+    COMPUTE --> STORAGE
+    L3 -.->|Live In-App Siren Alarm| U1
 ```
-                                      +---------------------------------------------+
-                                      |         DUAL-PERSONA CLIENT SUITE           |
-                                      |  • Legitimate User Security Portal          |
-                                      |  • Red Team Attack Simulator Studio         |
-                                      |  • Blue Team SOC & CloudWatch Visualizer    |
-                                      +----------------------+----------------------+
-                                                             |
-                                           HTTPS / JSON REST API (CORS)
-                                                             |
-                                      +----------------------v----------------------+
-                                      |            AMAZON API GATEWAY               |
-                                      |  • Pydantic Strict Input Validation         |
-                                      |  • XSS / NoSQL Injection Sanitizer          |
-                                      |  • Sliding-Window Brute Force Rate Limiter  |
-                                      +----------------------+----------------------+
-                                                             |
-                      +--------------------------------------+--------------------------------------+
-                      |                                      |                                      |
-       +--------------v---------------+      +---------------v--------------+      +----------------v---------------+
-       |    AWS LAMBDA: AUTH & MGT    |      |    AWS LAMBDA: ML ENGINE     |      |   AWS LAMBDA: ALERT NOTIFY     |
-       |  • PBKDF2-HMAC-SHA256 Hashing|      |  • Scikit-learn Random Forest|      |  • Amazon SNS Topic Dispatch   |
-       |  • Generic Error Messaging   |      |  • Isolation Forest Outliers |      |  • Immediate User In-App Alert |
-       |  • Active Session Kill Switch|      |  • Deep DL Neural Autoencoder|      |  • Emergency Lockout Processor |
-       +--------------+---------------+      +---------------+--------------+      +----------------+---------------+
-                      |                                      |                                      |
-                      +--------------------------------------+--------------------------------------+
-                                                             |
-                                      +----------------------v----------------------+
-                                      |       AMAZON CLOUDWATCH & MONGODB           |
-                                      |  • CloudWatch Metrics: Invocations, Alarms  |
-                                      |  • CloudWatch Log Stream: Structured Audits |
-                                      |  • MongoDB: Users, Sessions, Security Events|
-                                      +---------------------------------------------+
-```
 
 ---
 
-## 2. Software Requirements Matrix
+## 🧠 Multi-Layer Machine Learning Risk Engine
 
-| Requirement | Implementation in this Repository |
-| :--- | :--- |
-| **Python / Node.js** | • Python 3.14 backend runtime (`backend/app.py`, `backend/ml/`, `aws/lambdas/auth_handler.py`, `aws/lambdas/risk_engine.py`).<br>• Node.js Lambda Event Dispatcher (`aws/lambdas/event_dispatcher.js`). |
-| **AWS Serverless** | • AWS SAM / CloudFormation template (`aws/template.yaml`) defining API Gateway, Lambda functions, CloudWatch Log Groups, Metric Alarms, and SNS topics.<br>• CloudWatch Dashboard specification (`aws/cloudwatch_dashboard.json`). |
-| **TensorFlow / Scikit-learn** | • **Scikit-learn**: Isolation Forest (unsupervised anomaly detection) + Random Forest behavioral risk scoring classifier (`backend/ml/train_model.py`, `backend/ml/risk_model.joblib`).<br>• **TensorFlow/Keras**: Deep Autoencoder neural network (`backend/ml/tf_autoencoder.py`) calculating reconstruction Mean Squared Error (MSE) loss. |
-| **CloudWatch Monitoring** | • Real-time CloudWatch custom metrics tracking (`Invocations`, `HighRiskDetections`, `BlockedHijacks`, `LatencyMs`).<br>• CloudWatch Log Stream viewer with live keyword/level search (`/aws/lambda/AccountHijackRiskEngine`).<br>• CloudWatch Metric Alarms (`HighRiskRateAlarm`, `BruteForceBurstAlarm`). |
-| **Database (MongoDB)** | • MongoDB collections and indexes (`database/mongo_schema.js`).<br>• Unified DB abstraction layer (`database/db_manager.py`) with zero-config local document store and live MongoDB URI fallback. |
+### 7-Dimensional Behavioral Feature Vector
+Incoming sessions are transformed into a normalized behavioral vector:
+
+| Feature | Description | Anomaly Trigger |
+| :--- | :--- | :--- |
+| **`geo_velocity_kmh`** | Haversine velocity between successive logins | $> 900\text{ km/h}$ (Impossible Travel) |
+| **`distance_km`** | Physical geographic distance from baseline | Sudden intercontinental jump |
+| **`device_distance`** | Canvas fingerprint, OS, user-agent divergence | Unrecognized hardware canvas |
+| **`ip_reputation`** | Tor exit relays and datacenter proxies | Verified Tor exit node ($= 1.0$) |
+| **`failed_attempts_burst`** | Velocity of recent failed password attempts | $> 3\text{ failed attempts in 10 min}$ |
+| **`circadian_anomaly`** | Deviation from historical active login hours | Activity during off-hours |
+| **`bot_signature`** | Headless browser markers and automation flags | Automation signals detected |
+
+### Hybrid Models & Policy Actions
+- **Scikit-Learn Random Forest**: Evaluates supervised compromise probability ($0 - 100\%$).
+- **Scikit-Learn Isolation Forest**: Identifies unsupervised zero-day behavioral anomalies.
+- **TensorFlow Deep Autoencoder (7-4-2-4-7)**: Flags anomalies when reconstruction error exceeds threshold ($\text{MSE} > 0.12$).
+- **Explainable AI (XAI)**: Generates human-readable factor attribution weights for every security event.
+
+| Risk Score | Action | Automated Enforcement |
+| :---: | :---: | :--- |
+| **0 – 39** | `ALLOW` | Standard session access granted |
+| **40 – 69** | `CHALLENGE_MFA` | Adaptive Step-Up 6-digit OTP verification challenge |
+| **70 – 100** | `BLOCK_SESSION` | Session revoked, Web Audio siren sounds, CloudWatch incremented, SNS dispatched |
 
 ---
 
-## 3. Global Security Policy Adherence
+## 🔒 Security Hardening Controls
 
-1. **Strict Input Validation**: Pydantic schemas validate all incoming parameters (email regex, password length constraints, IP format).
-2. **Server Input Sanitization**: Recursive sanitization neutralizes HTML/script tags (XSS) and NoSQL injection operators (`$where`, `$gt`, `$ne`).
-3. **Brute Force Defense**: Sliding-window rate limiting throttles requests and locks out attackers after 5 failed attempts within 10 minutes.
-4. **Secure Password Hashing**: Passwords are encrypted with PBKDF2-HMAC-SHA256 using 200,000 iterations and unique 16-byte cryptographic salts.
-5. **Generic Error Messages**: Authentication failures always return generic messaging (*"Invalid credentials or account restricted"*) to prevent user enumeration.
+- **PBKDF2-HMAC-SHA256**: 200,000 hashing rounds with 16-byte cryptographic salts (`secrets.token_hex`).
+- **Sliding-Window Rate Limiting**: 5 failed login attempts per 10-minute window enforces a 15-minute lockout.
+- **Input Sanitization**: Neutralizes XSS tags and NoSQL injection operators (`$where`, `$gt`, `$ne`, prototype pollution).
+- **Anti-Enumeration Generic Messaging**: Standardized *"Invalid credentials or account restricted"* responses.
+- **Primary Device Governance & Kill Switch**: Master device retains sole revocation authority over secondary sessions.
 
 ---
 
-## 4. Quick Start (Running Locally)
+## 🚀 Quick Start (Running Locally)
+
+Zero AWS cloud dependencies or external databases required—includes built-in local document storage and SIEM telemetry.
 
 ### Prerequisites
-- Python 3.10+ (Python 3.14 installed and tested)
-- Node.js 18+ (Node v24.16 installed and tested)
+- Python 3.10+ (tested on Python 3.10 – 3.14)
 
-### Step 1: Install Dependencies
+### 1. Install & Verify
 ```bash
-python -m pip install -r requirements.txt
-```
+# Clone & enter directory
+cd aws-security-main
 
-### Step 2: Run Automated Test Suite
-```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run automated tests
 python -m unittest tests/test_backend.py
 ```
 
-### Step 3: Launch Local Serverless Application
+### 2. Launch Standalone Cyber Defense Platform
 ```bash
-python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000 --reload
+python run_standalone.py
 ```
-Open your browser to: **`http://127.0.0.1:8000`**
+Open **`http://127.0.0.1:8000`** in your browser. *(Or use `docker-compose up --build`)*
+
+### Seeded Demonstration Accounts
+| Persona | Email | Password | Baseline Location |
+| :--- | :--- | :--- | :--- |
+| **Primary Demo User** | `demo@awssecurity.io` | `AWSSecurity#2026` | New York, US |
+| **Legacy Demo User** | `demo@aegisguard.io` | `AegisGuard#2026` | New York, US |
 
 ---
 
-## 5. Live Demonstration Scenarios
+## 🎯 Two-Browser Live Demonstration Guide
 
-1. **Legitimate User Portal**:
-   - Register a new account (note the live password strength meter and hardware fingerprint).
-   - Sign in to view your dashboard, active sessions, and security inbox.
-2. **Red Team Attack Simulation**:
-   - Switch to the **Attack Simulator** tab.
-   - Click **Impossible Travel** to simulate access from Tokyo 2 minutes after New York (speed: 8,500 km/h).
-   - Click **Tor Credential Stuffing** to simulate login via a known Tor exit relay (185.220.101.45).
-   - Observe how the ML Risk Engine flags the threat (> 70/100) and automatically executes `BLOCK_SESSION`.
-3. **Blue Team SOC Dashboard**:
-   - Switch to **SOC Blue Team** to watch the animated SVG Risk Gauge needle spike into the Crimson zone.
-   - Inspect the interactive Geo-Velocity travel visualizer plotting the flight path and velocity between coordinates.
-   - Click **Inspect** on any event in the real-time stream to review the Explainable AI (XAI) feature attribution breakdown.
-4. **Amazon CloudWatch Panel**:
-   - Review live CloudWatch metric counters (`Invocations`, `HighRiskDetections`, `BlockedHijacks`).
-   - Monitor the `HighRiskRateAlarm` state and search the real-time CloudWatch log stream.
-5. **Instant Session Kill Switch**:
-   - In the User Portal, click **Kill Session** on any device to revoke access immediately.
-   - Click **Freeze Account** to lock the account and invalidate all tokens.
+Demonstrate real-time attack detection and automated prevention on a single machine:
+
+1. **Browser 1 (Chrome — Legitimate User)**:
+   - Go to `http://127.0.0.1:8000`, click **`👤 Fill Demo User (Sachin)`**, and log in.
+   - Click **`🛡️ Yes, Register as My Primary Device`** when prompted. Notice `🔊 Sound: ON`.
+2. **Browser 2 (Edge / Incognito — Attacker)**:
+   - Open `http://127.0.0.1:8000` and switch to the **`⚡ Attack Simulator`** tab.
+   - Select `demo@awssecurity.io` and click **`Launch Scenario`** under **Impossible Travel (Tokyo, 8,500 km/h)**.
+3. **Observe Automated Defense in Browser 1**:
+   - Within 2 seconds, Browser 1 **sounds an audible siren alarm** and displays a pulsing crimson alert banner.
+   - The threat card arrives in the **Security Alerts Inbox** with an XAI factor breakdown.
+   - Switch to **`🛰️ SOC Blue Team`** to inspect the SVG risk needle spike and the flight trajectory map.
+   - Switch to **`📊 Telemetry & SIEM`** to verify that `BlockedHijacks` incremented in CloudWatch.
 
 ---
 
-## 6. AWS Cloud Deployment (SAM / CloudFormation)
+## ☁️ AWS Cloud Production Deployment
 
-To deploy to live AWS:
+Deploy the serverless stack to AWS using the provided SAM template (`aws/template.yaml`):
+
 ```bash
 cd aws
 sam build
 sam deploy --guided
 ```
-This deploys the complete stack including API Gateway, AWS Lambda handlers, Amazon CloudWatch Alarms, and Amazon SNS Topics.
+
+**Provisions**: Amazon API Gateway, 3 AWS Lambda functions (Auth, Risk Engine, Alert Dispatcher), CloudWatch Log Group (`/aws/lambda/AccountHijackRiskEngine`), CloudWatch Alarm (`HighRiskRateAlarm`), and Amazon SNS Topic.
+
+---
+
+## 📁 Repository Structure
+
+```
+aws-security-main/
+├── README.md                 # System overview & quickstart
+├── PRACTICE.md               # Viva defense guide & exam Q&A
+├── requirements.txt          # Python dependencies (FastAPI, Scikit-learn, etc.)
+├── run_standalone.py         # Zero-AWS one-click standalone runner
+├── docker-compose.yml        # Multi-container Docker setup with MongoDB 7.0
+├── aws/                      # SAM template, CloudWatch dashboard & Lambda handlers
+├── backend/                  # FastAPI REST API, hybrid ML models & security controls
+├── database/                 # Transparent document store & MongoDB schemas
+└── frontend/                 # Dual-persona UI (User Portal, Attack Studio, SOC, SIEM)
+```
+
+---
+
+## 📄 License
+This project is licensed under the **MIT License**.
